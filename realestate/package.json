@@ -1,0 +1,26 @@
+{
+  "name": "real-estate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node ./scripts/install-dev.mjs",
+    "pre-commit": "node ./scripts/pre-commit-hook.mjs",
+    "prepare": "husky install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chart.js": "^2.9.41",
+    "husky": "^8.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1",
+    "execa": "^8.0.1",
+    "prop-types": "^15.8.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-router-dom": "^6.20.1",
+    "xlsx": "^0.18.5"
+  }
+}

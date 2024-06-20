@@ -1,0 +1,61 @@
+name: development
+
+run-name: ${{ github.actor }} is running the action
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Backend setup .env file
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_PORT: 8080
+          envkey_DATABASE_CONNECTION: ${{ format('mongodb://{0}:{1}@{2}:{3}/{4}?authSource=admin', secrets.DB_USER, secrets.DB_PASSWORD, secrets.DB_HOST, secrets.DB_PORT, secrets.DB_NAME ) }} 
+          directory: backend
+          sort_keys: false
+      
+      - name: Update docker compose file configuration variables
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: ./docker-compose.yml
+        env:
+          services.realestate-db.environment.MONGO_INITDB_ROOT_USERNAME: ${{ secrets.DB_USER }}
+          services.realestate-db.environment.MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          services.realestate-db.environment.MONGO_INITDB_DATABASE: ${{ secrets.DB_NAME }}
+          services.realestate-mongo-express.environment.ME_CONFIG_BASICAUTH_USERNAME: ${{ secrets.MONGO_EXPRESS_USERNAME }}
+          services.realestate-mongo-express.environment.ME_CONFIG_BASICAUTH_PASSWORD: ${{ secrets.MONGO_EXPRESS_PASSWORD }}
+          services.realestate-mongo-express.environment.ME_CONFIG_SITE_COOKIESECRET: ${{ secrets.MONGO_EXPRESS_COOKIE_SECRET }}
+          services.realestate-mongo-express.environment.ME_CONFIG_SITE_SESSIONSECRET: ${{ secrets.MONGO_EXPRESS_SESSION_SECRET }}
+          services.realestate-mongo-express.environment.ME_CONFIG_MONGODB_ADMINUSERNAME: ${{ secrets.DB_USER }}
+          services.realestate-mongo-express.environment.ME_CONFIG_MONGODB_ADMINPASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: Display docker compose config
+        run: cat ./docker-compose.yml
+      
+      - name: Setup ssh key and known host
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+        
+      - name: Compress and zip project directory
+        run: tar zcfv output/project.tar.gz backend frontend docker-compose.yml
+      
+      - name: Copy compressed project to server
+        run: scp output/project.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/realestate/
+
+      - name: Uncompress the project from tar
+        run: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} 'cd ~/realestate && tar zxfv ./project.tar.gz'
+
+      - name: Running docker compose
+        run: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} 'cd ~/realestate && docker compose down && docker compose up -d --build'

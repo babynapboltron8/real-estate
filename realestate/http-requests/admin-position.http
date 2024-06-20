@@ -1,0 +1,25 @@
+http://localhost:3000/api/admin/positions
+
+
+### create admin position
+POST http://localhost:3000/api/admin/positions
+Content-Type: application/json
+
+{
+    "name": "President"
+}
+
+
+### sample request
+POST http://localhost:3000/api/admin/signup
+Content-Type: application/json
+
+{
+    "firstName": "Dexter",
+    "lastName": "Echalico",
+    "positionId": "65bc9e13b06912d37f529b16",
+    "username": "dexter2",
+    "password": "dexter2",
+    "roles": ["admin"],
+    "createdBy": "65bc9f0db06912d37f529b19"
+}

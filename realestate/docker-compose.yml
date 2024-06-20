@@ -1,0 +1,61 @@
+version: "3.1"
+
+services:
+  realestate-db:
+    container_name: realstate-db
+    image: mongo:4.4.24
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: real-estate
+    volumes: 
+      - real-estate-db:/data/db
+    networks:
+      - real-estate
+  
+  realestate-mongo-express:
+    container_name: realestate-mongo-express
+    image: mongo-express:latest
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_SERVER: realstate-db
+      ME_CONFIG_BASICAUTH_USERNAME: some-admin
+      ME_CONFIG_BASICAUTH_PASSWORD: some-password
+      ME_CONFIG_SITE_COOKIESECRET: some-cookie-secret
+      ME_CONFIG_SITE_SESSIONSECRET: some-session-secret
+      ME_CONFIG_MONGODB_ADMINUSERNAME: some-db-admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: some-db-password
+    networks:
+      - real-estate
+      - app-network
+    depends_on:
+      - realestate-db
+  
+  realestate-backend:
+    container_name: realestate-backend
+    restart: always
+    build: ./backend
+    networks:
+      - real-estate
+      - app-network
+    depends_on:
+      - realestate-db
+
+  realestate-frontend:
+    container_name: realestate-frontend
+    restart: always
+    build: ./frontend
+    networks:
+      - real-estate
+      - app-network
+    depends_on:
+      - realestate-backend
+
+networks:
+  real-estate:
+  app-network:
+    name: app-network
+
+volumes:
+  real-estate-db:
